@@ -36,6 +36,8 @@ public class User implements Serializable{
      */
     private String password = "123456";
 
+    private boolean rememberMe;
+
     /**
      * 用户所对应的角色
      */
@@ -105,5 +107,13 @@ public class User implements Serializable{
 
     public String getRoleIds() {
         return StringUtils.join(getRoleIdList(), ",");
+    }
+
+    public boolean isRememberMe() {
+        return rememberMe;
+    }
+
+    public void setRememberMe(boolean rememberMe) {
+        this.rememberMe = rememberMe;
     }
 }

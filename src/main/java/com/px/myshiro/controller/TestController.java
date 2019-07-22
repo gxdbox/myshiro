@@ -1,7 +1,8 @@
 package com.px.myshiro.controller;
 
-import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.Mapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 /**
@@ -24,15 +25,15 @@ public class TestController {
         return "login";
     }
 
-/*    @RequestMapping("/success")
+    @GetMapping("/success")
     public String success(){
         System.out.println("测试success");
         return "success";
     }
 
-    @RequestMapping("/unauth")
+    @GetMapping("/unauth")
     public String unauth(){
         System.out.println("测试unauth");
         return "403";
-    }*/
+    }
 }

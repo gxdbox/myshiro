@@ -39,11 +39,12 @@ public class CustomRealm extends AuthorizingRealm {
         User user = (User)principal.getPrimaryPrincipal();
         Long idd = Long.valueOf(user.getId());
 
-        Long id =user.getId();
-        Set<String> roles = roleService.getRolesById(id);
+        //Long id =user.getId();
+        Set<String> roles = roleService.getRolesById(idd);
+        System.out.println("从数据库查找数据");
         //Set<String> roles = new HashSet<>();
         //roles.add("admin");
-        //roles.add("user");
+//        roles.add("user");
 
         SimpleAuthorizationInfo simpleAuthorizationInfo = new SimpleAuthorizationInfo();
         simpleAuthorizationInfo.setRoles(roles);

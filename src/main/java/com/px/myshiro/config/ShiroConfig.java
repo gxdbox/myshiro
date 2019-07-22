@@ -1,5 +1,6 @@
 package com.px.myshiro.config;
 
+import com.px.myshiro.cache.RedisCacheManager;
 import com.px.myshiro.sessionDao.CustomSessionManage;
 import com.px.myshiro.sessionDao.SessionDao;
 import com.px.myshiro.shiro.CustomFilter;
@@ -9,7 +10,9 @@ import org.apache.shiro.mgt.SecurityManager;
 import org.apache.shiro.session.mgt.SessionManager;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
+import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.apache.shiro.web.servlet.SimpleCookie;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,21 +36,15 @@ public class ShiroConfig {
     @Bean
     public ShiroFilterFactoryBean shiroFilterFactoryBean(@Qualifier("securityManager")SecurityManager securityManager){
         ShiroFilterFactoryBean shiroFilterFactoryBean = new ShiroFilterFactoryBean();
-        //获取filters
-        Map<String, Filter> filters = shiroFilterFactoryBean.getFilters();
-
-        //将自定义 的CustomFilter注入shiroFilter中
-/*        LinkedHashMap<String, Filter> filtermap = new LinkedHashMap<>();
-        filtermap.put("myfilter",customFilter());
-        shiroFilterFactoryBean.setFilters(filtermap);*/
-        shiroFilterFactoryBean.setFilters(filters);
-
-
         // 必须设置 SecurityManager
         shiroFilterFactoryBean.setSecurityManager(securityManager);
 
         // 登录成功后要跳转的链接
-        //shiroFilterFactoryBean.setSuccessUrl("/");
+        LinkedHashMap<String, Filter> filtermap = new LinkedHashMap<>();
+        filtermap.put("myfilter",customFilter());
+        shiroFilterFactoryBean.setFilters(filtermap);
+
+
 
         // 拦截器.
         Map<String, String> filterChainDefinitionMap = new LinkedHashMap<String, String>();
@@ -63,25 +60,18 @@ public class ShiroConfig {
          * user  验证通过或RememberMe登录的都可以
          *
          */
-        //filterChainDefinitionMap.put("login.html","anon");
-        //filterChainDefinitionMap.put("user/login","anon");
-        //filterChainDefinitionMap.put("myfilter","user");
+        filterChainDefinitionMap.put("/tst/unauth","anon");
+        filterChainDefinitionMap.put("/tst/success","anon");
         filterChainDefinitionMap.put("/tst/login","anon");
         filterChainDefinitionMap.put("/user/login","anon");
-        //配置记住我或认证通过可以访问的地址
-        //filterChainDefinitionMap.put("/", "user");
-        //filterChainDefinitionMap.put("/login", "authc");
-
-        // 配置退出过滤器,其中的具体的退出代码Shiro已经替我们实现了
-        //filterChainDefinitionMap.put("/logout", "logout");
 
         //所有url都必须有user权限才可以访问 一般讲/**放在最后面
-        //filterChainDefinitionMap.put("/**", "myfilter[admin,user]");
-        filterChainDefinitionMap.put("/**", "user");
+        filterChainDefinitionMap.put("/**", "myfilter[admin,user]");
+        filterChainDefinitionMap.put("/**", "authc");
         // 如果不设置默认会自动寻找Web工程根目录下的"/login.html"页面
-        //shiroFilterFactoryBean.setLoginUrl("/user/login");
-        //shiroFilterFactoryBean.setUnauthorizedUrl("tst/unauth");
-        //shiroFilterFactoryBean.setSuccessUrl("/tst/success");
+        shiroFilterFactoryBean.setLoginUrl("/login");
+        shiroFilterFactoryBean.setUnauthorizedUrl("/403");
+        shiroFilterFactoryBean.setSuccessUrl("/success");
         shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
         return shiroFilterFactoryBean;
     }
@@ -89,10 +79,13 @@ public class ShiroConfig {
 
     @Bean(name = "securityManager")
     public SecurityManager securityManager(@Qualifier("customRealm") CustomRealm customRealm,
-                                           @Qualifier("sessionManager") SessionManager sessionManager){
+                                           @Qualifier("sessionManager") SessionManager sessionManager,
+                                           @Qualifier("redisCacheManager") RedisCacheManager redisCacheManager){
         DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
         securityManager.setRealm(customRealm);
         securityManager.setSessionManager(sessionManager);
+        securityManager.setCacheManager(redisCacheManager);
+        securityManager.setRememberMeManager(rememberMeManager());
         return securityManager;
     }
 
@@ -102,6 +95,12 @@ public class ShiroConfig {
         customRealm.setCredentialsMatcher(matcher);
         return customRealm;
     }
+
+    @Bean(name = "redisCacheManager")
+    public RedisCacheManager redisCacheManager(){
+        return new RedisCacheManager();
+    }
+
 
     @Bean
     public HashedCredentialsMatcher hashedCredentialsMatcher(){
@@ -141,4 +140,19 @@ public class ShiroConfig {
         return new CustomFilter();
     }
 
+    @Bean
+    public SimpleCookie rememberMeCookie() {
+        //这个参数是cookie的名称，对应前端的checkbox的name = rememberMe
+        SimpleCookie simpleCookie = new SimpleCookie("rememberMe");
+        //<!-- 记住我cookie生效时间30天 ,单位秒;-->
+        simpleCookie.setMaxAge(259200);
+        return simpleCookie;
+    }
+
+    @Bean
+    public CookieRememberMeManager rememberMeManager() {
+        CookieRememberMeManager cookieRememberMeManager = new CookieRememberMeManager();
+        cookieRememberMeManager.setCookie(rememberMeCookie());
+        return cookieRememberMeManager;
+    }
 }
